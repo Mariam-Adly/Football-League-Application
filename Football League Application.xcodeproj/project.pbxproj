@@ -126,13 +126,6 @@
 			path = Home;
 			sourceTree = "<group>";
 		};
-		445A358F2C333F4800B7CB48 /* Mo */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Mo;
-			sourceTree = "<group>";
-		};
 		44BC3B072C3334D30045E84E = {
 			isa = PBXGroup;
 			children = (
@@ -159,7 +152,6 @@
 		44BC3B122C3334D30045E84E /* Football League Application */ = {
 			isa = PBXGroup;
 			children = (
-				445A358F2C333F4800B7CB48 /* Mo */,
 				445A358C2C333D2C00B7CB48 /* Home */,
 				445A35892C333C4700B7CB48 /* SplashScreen */,
 				44BC3B132C3334D30045E84E /* AppDelegate.swift */,
