@@ -21,7 +21,6 @@
 		44BC3B2E2C3334D60045E84E /* Football_League_ApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BC3B2D2C3334D60045E84E /* Football_League_ApplicationTests.swift */; };
 		44BC3B382C3334D60045E84E /* Football_League_ApplicationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BC3B372C3334D60045E84E /* Football_League_ApplicationUITests.swift */; };
 		44BC3B3A2C3334D60045E84E /* Football_League_ApplicationUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BC3B392C3334D60045E84E /* Football_League_ApplicationUITestsLaunchTests.swift */; };
-		44BC3B472C3338090045E84E /* gitignore.txt in Resources */ = {isa = PBXBuildFile; fileRef = 44BC3B462C3338090045E84E /* gitignore.txt */; };
 		9CF72F5EB2CE8689E500542C /* Pods_Football_League_Application.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77EDC9E50975747E36E6EDC7 /* Pods_Football_League_Application.framework */; };
 /* End PBXBuildFile section */
 
@@ -61,7 +60,6 @@
 		44BC3B332C3334D60045E84E /* Football League ApplicationUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Football League ApplicationUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		44BC3B372C3334D60045E84E /* Football_League_ApplicationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Football_League_ApplicationUITests.swift; sourceTree = "<group>"; };
 		44BC3B392C3334D60045E84E /* Football_League_ApplicationUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Football_League_ApplicationUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		44BC3B462C3338090045E84E /* gitignore.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = gitignore.txt; sourceTree = "<group>"; };
 		59A6B88E2D3DBC92CA960C5F /* Pods-Football League ApplicationTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Football League ApplicationTests.debug.xcconfig"; path = "Target Support Files/Pods-Football League ApplicationTests/Pods-Football League ApplicationTests.debug.xcconfig"; sourceTree = "<group>"; };
 		609500829173D4B359E65FBF /* Pods-Football League ApplicationTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Football League ApplicationTests.release.xcconfig"; path = "Target Support Files/Pods-Football League ApplicationTests/Pods-Football League ApplicationTests.release.xcconfig"; sourceTree = "<group>"; };
 		77EDC9E50975747E36E6EDC7 /* Pods_Football_League_Application.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Football_League_Application.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -129,7 +127,6 @@
 		44BC3B072C3334D30045E84E = {
 			isa = PBXGroup;
 			children = (
-				44BC3B462C3338090045E84E /* gitignore.txt */,
 				44BC3B122C3334D30045E84E /* Football League Application */,
 				44BC3B2C2C3334D60045E84E /* Football League ApplicationTests */,
 				44BC3B362C3334D60045E84E /* Football League ApplicationUITests */,
@@ -307,7 +304,6 @@
 				44BC3B232C3334D50045E84E /* LaunchScreen.storyboard in Resources */,
 				44BC3B202C3334D50045E84E /* Assets.xcassets in Resources */,
 				44BC3B1B2C3334D30045E84E /* Main.storyboard in Resources */,
-				44BC3B472C3338090045E84E /* gitignore.txt in Resources */,
 				445A358B2C333CB300B7CB48 /* sport.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
