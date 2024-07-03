@@ -140,7 +140,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="IJ3-8K-nyW"/>
                     <connections>
-                        <outlet property="homeTV" destination="oye-XM-iTX" id="JBr-rn-5eL"/>
+                        <outlet property="homeTV" destination="oye-XM-iTX" id="1fG-xI-dD3"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="n3I-KC-wi5" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

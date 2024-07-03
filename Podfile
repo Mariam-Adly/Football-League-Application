@@ -7,6 +7,7 @@ target 'Football League Application' do
 pod 'lottie-ios'
  pod 'SDWebImage'
  pod 'Alamofire'
+ pod 'RxCocoa'
   # Pods for Football League Application
 
   target 'Football League ApplicationTests' do

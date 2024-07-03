@@ -6,28 +6,34 @@
 //
 
 import Foundation
+import RxSwift
+import RxRelay
+import RxCocoa
+
 class HomeViewModel {
-   
-    var errorMessage: String?
-    var bindCompetitionToHomeVC :  (()->()) = {}
+    private let disposeBag = DisposeBag()
+
+    var competitions = BehaviorRelay<[Competition]>(value: [])
+    var errorMessage = PublishSubject<String>()
     
-    var competition  : [Competition]? {
-        didSet {
-            bindCompetitionToHomeVC()
-        }
-    }
-    
- func fetchData() {
-     guard let url = URL(string: "https://api.football-data.org/v4/competitions") else { return }
-     NetworkServices.fetchData(endPoint: Constants.Endpoints.competitions) {
-            [weak self](result: Result<CompetitionResult, Error>) in
-              DispatchQueue.main.async {
-                    switch result {
-                    case .success(let competition):
-                        self?.competition = competition.competitions
-                        DataManager.shared.saveObjects(objects: competition.competitions, forKey: "competitionKey")
-                    case .failure(let error):
-                        self?.errorMessage = error.localizedDescription
+    func fetchData() {
+        NetworkServices.fetchData(endPoint: Constants.Endpoints.competitions) { [weak self] (result: Result<CompetitionResult, Error>) in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let competitionResult):
+                    self?.competitions.accept(competitionResult.competitions)
+                    DataManager.shared.saveObjects(objects: competitionResult.competitions, forKey: "competitionKey")
+                        .subscribe(
+                                        onSuccess: {
+                                            print("Team saved successfully.")
+                                        },
+                                        onFailure: { error in
+                                            print("Error saving team: \(error.localizedDescription)")
+                                        }
+                                    )
+                        .disposed(by: self?.disposeBag ?? DisposeBag())
+                case .failure(let error):
+                    self?.errorMessage.onNext(error.localizedDescription)
                 }
             }
         }
