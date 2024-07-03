@@ -8,7 +8,6 @@
 import Foundation
 class HomeViewModel {
    
-    
     var errorMessage: String?
     var bindCompetitionToHomeVC :  (()->()) = {}
     
@@ -19,13 +18,14 @@ class HomeViewModel {
     }
     
  func fetchData() {
-       
-        NetworkServices.fetchData() {
+     guard let url = URL(string: "https://api.football-data.org/v4/competitions") else { return }
+     NetworkServices.fetchData(endPoint: Constants.Endpoints.competitions) {
             [weak self](result: Result<CompetitionResult, Error>) in
               DispatchQueue.main.async {
                     switch result {
                     case .success(let competition):
                         self?.competition = competition.competitions
+                        DataManager.shared.saveObjects(objects: competition.competitions, forKey: "competitionKey")
                     case .failure(let error):
                         self?.errorMessage = error.localizedDescription
                 }

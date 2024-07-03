@@ -24,15 +24,24 @@ class HomeViewController: UIViewController,UITableViewDelegate, UITableViewDataS
         
         homeTV.register(UINib(nibName: "HomeTableViewCell", bundle: nil), forCellReuseIdentifier: "homeCell")
         
-        homeVM?.fetchData()
-        homeVM?.bindCompetitionToHomeVC = {
+        if CheckNetwork.isConnectedToInternet(){
+            homeVM?.fetchData()
+            homeVM?.bindCompetitionToHomeVC = {
+                DispatchQueue.main.async {
+                    self.competition = self.homeVM?.competition
+                    self.homeTV.reloadData()
+                }
+            }
+        }else{
             DispatchQueue.main.async {
-                self.competition = self.homeVM?.competition
-                self.homeTV.reloadData()
+                if let localObjects : [Competition] = DataManager.shared.getObjects(forKey:"competitionKey") {
+                    self.competition = localObjects
+                    self.homeTV.reloadData()
+                }
             }
         }
         
-        }
+    }
     
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
@@ -53,11 +62,26 @@ class HomeViewController: UIViewController,UITableViewDelegate, UITableViewDataS
     }
   
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let competitionDetailsVC = self.storyboard?.instantiateViewController(withIdentifier: "CompetitionDetilsViewController") as! CompetitionDetilsViewController
-        //let controller = TeamDetailsViewModel(team:teamsArr![indexPath.row])
-        //teamsDetailsVC.detailsViewModel = controller
-       
-        self.navigationController?.pushViewController(competitionDetailsVC, animated: true)
-    }
+        tableView.deselectRow(at: indexPath, animated: true)
+
+            guard let storyboard = self.storyboard else {
+                print("Error: Storyboard is nil")
+                return
+            }
+
+            guard let competitionDetailsVC = storyboard.instantiateViewController(withIdentifier: "competitionDetailsVC") as? CompetitionDetailsViewController else {
+                print("Error: Could not instantiate CompetitionDetailsViewController")
+                return
+            }
+
+        guard let navigationController = self.navigationController else {
+            print("Error: Navigation controller is nil")
+            return
+        }
+          
+        let controller = CompetitionViewModel(competition: competition?[indexPath.row])
+        competitionDetailsVC.competitionVM = controller
+        navigationController.pushViewController(competitionDetailsVC, animated: true)
+      }
 }
 

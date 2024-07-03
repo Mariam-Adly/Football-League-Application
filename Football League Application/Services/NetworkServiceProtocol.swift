@@ -8,7 +8,7 @@
 import Foundation
 protocol NetworkServiceProtocol{
     
-    static func fetchData<T:Decodable>( completion: @escaping (Result<T, Error>) -> Void)
+    static func fetchData<T:Decodable>(endPoint:String,completion: @escaping (Result<T, Error>) -> Void)
     
 }
 

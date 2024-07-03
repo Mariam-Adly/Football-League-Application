@@ -15,10 +15,15 @@ class SplashViewController: UIViewController {
         super.viewDidLoad()
         setupAnimations()
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-               let vc = self.storyboard?.instantiateViewController(identifier: "HomeViewController") as! HomeViewController
-                        vc.modalTransitionStyle = .crossDissolve
-                        vc.modalPresentationStyle = .fullScreen
-                        self.present(vc, animated: true)
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                
+                    guard let homeNavigationController = storyboard.instantiateViewController(withIdentifier: "HomeNavigationController") as? UINavigationController else {
+                        print("Error: Could not instantiate HomeNavigationController")
+                        return
+                    }
+                    
+                    self.view.window?.rootViewController = homeNavigationController
+                    self.view.window?.makeKeyAndVisible()
                     }
         }
     private func setupAnimations(){
