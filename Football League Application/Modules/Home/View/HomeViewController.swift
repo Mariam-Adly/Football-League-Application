@@ -7,81 +7,117 @@
 
 import Foundation
 import UIKit
+import RxSwift
+import RxCocoa
 
-class HomeViewController: UIViewController,UITableViewDelegate, UITableViewDataSource {
-
+class HomeViewController: UIViewController {
+    
     var competition : [Competition]?
     var homeVM : HomeViewModel?
-    
+    private let disposeBag = DisposeBag()
     @IBOutlet weak var homeTV: UITableView!
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        homeTV.delegate = self
-        homeTV.dataSource = self
         
         homeVM = HomeViewModel()
         
         homeTV.register(UINib(nibName: "HomeTableViewCell", bundle: nil), forCellReuseIdentifier: "homeCell")
         
+        
         if CheckNetwork.isConnectedToInternet(){
             homeVM?.fetchData()
-            homeVM?.bindCompetitionToHomeVC = {
-                DispatchQueue.main.async {
-                    self.competition = self.homeVM?.competition
-                    self.homeTV.reloadData()
-                }
-            }
+            setupBindings()
         }else{
-            DispatchQueue.main.async {
-                if let localObjects : [Competition] = DataManager.shared.getObjects(forKey:"competitionKey") {
-                    self.competition = localObjects
-                    self.homeTV.reloadData()
-                }
-            }
+            DataManager.shared.getObjects(forKey: "competitionKey")
+                        .observe(on: MainScheduler.instance) // Ensure the subscription is on the main thread
+                        .subscribe(
+                            onSuccess: { [weak self] (localObjects: [Competition]?) in
+                                guard let self = self else { return }
+                                if let competitions = localObjects {
+                                    self.competition = competitions
+                                    self.bindLocalDataToTableView()
+                                } else {
+                                    print("No competition found in UserDefaults.")
+                                }
+                            },
+                            onFailure: { error in
+                                print("Error retrieving competition: \(error.localizedDescription)")
+                            }
+                        )
+                        .disposed(by: disposeBag)
+           
         }
         
     }
     
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return competition?.count ?? 0
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "homeCell", for: indexPath) as! HomeTableViewCell
-        let data = competition?[indexPath.row]
-        cell.numberOfTeams.text = String(data?.numberOfAvailableSeasons ?? 0)
-        cell.games.text = data?.type.rawValue
-        cell.leagueLongName.text = data?.name
-        cell.leagueShortName.text = data?.code
-       return cell
-    }
-  
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-
-            guard let storyboard = self.storyboard else {
+    private func setupBindings() {
+        homeVM?.competitions
+            .bind(to: homeTV.rx.items(cellIdentifier: "homeCell", cellType: HomeTableViewCell.self)) { index, competition, cell in
+                cell.numberOfTeams.text = String(competition.numberOfAvailableSeasons)
+                cell.games.text = competition.type.rawValue
+                cell.leagueLongName.text = competition.name
+                cell.leagueShortName.text = competition.code
+            }.disposed(by: disposeBag)
+        
+        homeTV.rx.itemSelected.subscribe(onNext: { [weak self] indexPath in
+            self?.homeTV.deselectRow(at: indexPath, animated: true)
+            guard let storyboard = self?.storyboard else {
                 print("Error: Storyboard is nil")
                 return
             }
-
+            
             guard let competitionDetailsVC = storyboard.instantiateViewController(withIdentifier: "competitionDetailsVC") as? CompetitionDetailsViewController else {
                 print("Error: Could not instantiate CompetitionDetailsViewController")
                 return
             }
+            
+            guard let navigationController = self?.navigationController else {
+                print("Error: Navigation controller is nil")
+                return
+            }
+            
+            let selectedCompetition = self?.homeVM?.competitions.value[indexPath.row]
+            let competitionViewModel = CompetitionViewModel(competition: selectedCompetition)
+            competitionDetailsVC.competitionVM = competitionViewModel
+            navigationController.pushViewController(competitionDetailsVC, animated: true)
+        }).disposed(by: disposeBag)
+        
+        
+    }
+    
+    private func bindLocalDataToTableView() {
+            Observable.just(competition ?? [])
+                .bind(to: homeTV.rx.items(cellIdentifier: "homeCell", cellType: HomeTableViewCell.self)) { index, competition, cell in
+                    cell.numberOfTeams.text = String(competition.numberOfAvailableSeasons)
+                    cell.games.text = competition.type.rawValue
+                    cell.leagueLongName.text = competition.name
+                    cell.leagueShortName.text = competition.code
+                }
+                .disposed(by: disposeBag)
 
-        guard let navigationController = self.navigationController else {
-            print("Error: Navigation controller is nil")
-            return
+            homeTV.rx.itemSelected
+                .subscribe(onNext: { [weak self] indexPath in
+                    self?.homeTV.deselectRow(at: indexPath, animated: true)
+                    guard let storyboard = self?.storyboard else {
+                        print("Error: Storyboard is nil")
+                        return
+                    }
+                    guard let competitionDetailsVC = storyboard.instantiateViewController(withIdentifier: "competitionDetailsVC") as? CompetitionDetailsViewController else {
+                        print("Error: Could not instantiate CompetitionDetailsViewController")
+                        return
+                    }
+                    guard let navigationController = self?.navigationController else {
+                        print("Error: Navigation controller is nil")
+                        return
+                    }
+                    let selectedCompetition = self?.competition?[indexPath.row]
+                    let competitionViewModel = CompetitionViewModel(competition: selectedCompetition)
+                    competitionDetailsVC.competitionVM = competitionViewModel
+                    navigationController.pushViewController(competitionDetailsVC, animated: true)
+                })
+                .disposed(by: disposeBag)
         }
-          
-        let controller = CompetitionViewModel(competition: competition?[indexPath.row])
-        competitionDetailsVC.competitionVM = controller
-        navigationController.pushViewController(competitionDetailsVC, animated: true)
-      }
+
 }
 

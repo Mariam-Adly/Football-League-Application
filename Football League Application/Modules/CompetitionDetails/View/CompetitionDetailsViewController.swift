@@ -8,8 +8,9 @@
 import Foundation
 import UIKit
 import SDWebImage
+import RxSwift
 
-class CompetitionDetailsViewController : UIViewController ,UITableViewDelegate, UITableViewDataSource{
+class CompetitionDetailsViewController : UIViewController{
     
     @IBOutlet weak var competitionImg: UIImageView!
     
@@ -17,43 +18,56 @@ class CompetitionDetailsViewController : UIViewController ,UITableViewDelegate, 
     @IBOutlet weak var competitionCode: UILabel!
     @IBOutlet weak var competitionName: UILabel!
     var competitionVM : CompetitionViewModel?
+    private let disposeBag = DisposeBag()
     var competitionDetails : CompetitionDetails?
     var teams : [Team]?
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        teamTV.delegate = self
-        teamTV.dataSource = self
         
         teamTV.register(UINib(nibName: "TeamTableViewCell", bundle: nil), forCellReuseIdentifier: "teamCell")
         if CheckNetwork.isConnectedToInternet(){
             competitionVM?.fetchData()
-            competitionVM?.bindCompetitionDetailsToCompetitionVC = {
-                DispatchQueue.main.async {
-                    self.competitionDetails = self.competitionVM?.competitionDetails
-                    self.competitionImg.sd_setImage(with: URL(string: self.competitionDetails?.emblem ?? ""),placeholderImage: UIImage(named: "football"))
-                    self.competitionName.text = self.competitionDetails?.name
-                    self.competitionCode.text = self.competitionDetails?.code
-                }
-            }
-            
             competitionVM?.fetchTeams()
-            competitionVM?.bindTeamsToCompetitionVC = {
-                DispatchQueue.main.async {
-                    self.teams = self.competitionVM?.teams?.teams
-                    self.teamTV.reloadData()
-                }
-            }
+            setupBindings()
         }else{
             DispatchQueue.main.async {
-                if let localObjects : CompetitionDetails = DataManager.shared.getObjects(forKey:"competitionDetailsKey") {
-                    self.competitionDetails = localObjects
-                    
-                }
-                if let localObjects2 : Teams = DataManager.shared.getObjects(forKey:"teamsKey") {
-                    self.teams = localObjects2.teams
-                    self.teamTV.reloadData()
-                }
+                DataManager.shared.getObjects(forKey: "competitionDetailsKey")
+                            .observe(on: MainScheduler.instance) // Ensure the subscription is on the main thread
+                            .subscribe(
+                                onSuccess: { [weak self] (localObjects: CompetitionDetails?) in
+                                    guard let self = self else { return }
+                                    if let competitions = localObjects {
+                                        self.competitionDetails = competitions
+                                    } else {
+                                        print("No competition found in UserDefaults.")
+                                    }
+                                },
+                                onFailure: { error in
+                                    print("Error retrieving competition: \(error.localizedDescription)")
+                                }
+                            )
+                            .disposed(by: self.disposeBag)
+                
+                DataManager.shared.getObjects(forKey: "teamsKey")
+                            .observe(on: MainScheduler.instance) // Ensure the subscription is on the main thread
+                            .subscribe(
+                                onSuccess: { [weak self] (localObjects: Teams?) in
+                                    guard let self = self else { return }
+                                    if let competitions = localObjects {
+                                        self.teams = competitions.teams
+                                        self.bindDataToTable()
+                                    } else {
+                                        print("No competition found in UserDefaults.")
+                                    }
+                                },
+                                onFailure: { error in
+                                    print("Error retrieving competition: \(error.localizedDescription)")
+                                }
+                            )
+                            .disposed(by: self.disposeBag)
+                
+        
                 self.competitionImg.sd_setImage(with: URL(string: self.competitionDetails?.emblem ?? ""),placeholderImage: UIImage(named: "football"))
                 self.competitionName.text = self.competitionDetails?.name
                 self.competitionCode.text = self.competitionDetails?.code
@@ -65,23 +79,28 @@ class CompetitionDetailsViewController : UIViewController ,UITableViewDelegate, 
         self.competitionCode.text = self.competitionDetails?.code
     }
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return teams?.count ?? 0
-    }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = teamTV.dequeueReusableCell(withIdentifier: "teamCell", for: indexPath) as! TeamTableViewCell
-        let data = teams?[indexPath.row]
-        cell.teamImg.sd_setImage(with: URL(string: data?.crest ?? ""),placeholderImage: UIImage(named: "football"))
-        cell.teamName.text = data?.name
-        cell.teamShortName.text = data?.shortName
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-
-            guard let storyboard = self.storyboard else {
+    private func setupBindings() {
+            competitionVM?.competitionDetails
+                .compactMap { $0 }
+                .subscribe(onNext: { [weak self] details in
+                    self?.competitionImg.sd_setImage(with: URL(string: details.emblem),placeholderImage: UIImage(named: "football"))
+                    self?.competitionName.text = details.name
+                    self?.competitionCode.text = details.code
+                }).disposed(by: disposeBag)
+            
+            competitionVM?.players?
+                .compactMap { $0 }
+                .bind(to: teamTV.rx.items(cellIdentifier: "teamCell", cellType: TeamTableViewCell.self)) { index, team, cell in
+                    cell.teamImg.sd_setImage(with: URL(string: team.crest ?? ""),placeholderImage: UIImage(named: "football"))
+                    cell.teamName.text = team.name
+                    cell.teamShortName.text = team.shortName
+                }.disposed(by: disposeBag)
+        
+        teamTV.rx.itemSelected.subscribe(onNext: { [weak self] indexPath in
+            self?.teamTV.deselectRow(at: indexPath, animated: true)
+            
+            guard let storyboard = self?.storyboard else {
                 print("Error: Storyboard is nil")
                 return
             }
@@ -91,13 +110,63 @@ class CompetitionDetailsViewController : UIViewController ,UITableViewDelegate, 
                 return
             }
 
-        guard let navigationController = self.navigationController else {
+        guard let navigationController = self?.navigationController else {
             print("Error: Navigation controller is nil")
             return
         }
-          
-        let controller = TeamDetailsViewModel(team: teams?[indexPath.row])
-        teamDetailsVC.teamDetailsVM = controller
-        navigationController.pushViewController(teamDetailsVC, animated: true)
-      }
+            
+            let selectedTeam = self?.competitionVM?.teams.value?.teams?[indexPath.row]
+            let teamDeatailsViewModel = TeamDetailsViewModel(team: selectedTeam)
+            teamDetailsVC.teamDetailsVM = teamDeatailsViewModel
+            navigationController.pushViewController(teamDetailsVC, animated: true)
+        }).disposed(by: disposeBag)
+        
+            
+        }
+    
+    private func bindDataToTable() {
+            competitionVM?.competitionDetails
+                .compactMap { $0 }
+                .subscribe(onNext: { [weak self] details in
+                    self?.competitionImg.sd_setImage(with: URL(string: details.emblem),placeholderImage: UIImage(named: "football"))
+                    self?.competitionName.text = details.name
+                    self?.competitionCode.text = details.code
+                }).disposed(by: disposeBag)
+            
+          //  competitionVM?.players?
+            //    .compactMap { $0 }
+        Observable.just(teams ?? [] )
+                .bind(to: teamTV.rx.items(cellIdentifier: "teamCell", cellType: TeamTableViewCell.self)) { index, team, cell in
+                    cell.teamImg.sd_setImage(with: URL(string: team.crest ?? ""),placeholderImage: UIImage(named: "football"))
+                    cell.teamName.text = team.name
+                    cell.teamShortName.text = team.shortName
+                }.disposed(by: disposeBag)
+        
+        teamTV.rx.itemSelected.subscribe(onNext: { [weak self] indexPath in
+            self?.teamTV.deselectRow(at: indexPath, animated: true)
+            
+            guard let storyboard = self?.storyboard else {
+                print("Error: Storyboard is nil")
+                return
+            }
+
+            guard let teamDetailsVC = storyboard.instantiateViewController(withIdentifier: "teamDetailsVC") as? TeamDetailsViewController else {
+                print("Error: Could not instantiate CompetitionDetailsViewController")
+                return
+            }
+
+        guard let navigationController = self?.navigationController else {
+            print("Error: Navigation controller is nil")
+            return
+        }
+            
+            let selectedTeam = self?.competitionVM?.teams.value?.teams?[indexPath.row]
+            let teamDeatailsViewModel = TeamDetailsViewModel(team: selectedTeam)
+            teamDetailsVC.teamDetailsVM = teamDeatailsViewModel
+            navigationController.pushViewController(teamDetailsVC, animated: true)
+        }).disposed(by: disposeBag)
+        
+            
+        }
+
 }
