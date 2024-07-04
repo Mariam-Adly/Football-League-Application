@@ -56,6 +56,7 @@ class CompetitionDetailsViewController : UIViewController{
                                     guard let self = self else { return }
                                     if let competitions = localObjects {
                                         self.teams = competitions.teams
+                                        self.competitionVM?.teams.accept(competitions)
                                         self.bindDataToTable()
                                     } else {
                                         print("No competition found in UserDefaults.")
